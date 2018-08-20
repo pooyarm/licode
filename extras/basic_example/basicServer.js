@@ -7,6 +7,7 @@ var express         = require('express'),
     N               = require('./nuve'),
     fs              = require('fs'),
     https           = require('https'),
+    request         = require('request'),
     config          = require('./../../licode_config');
 
 var options = {
