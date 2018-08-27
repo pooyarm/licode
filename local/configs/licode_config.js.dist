@@ -1,0 +1,19 @@
+var config = {}
+config.erizoController = {};
+config.erizoAgent = {};
+config.erizo = {};
+
+
+config.erizoController.publicIP = '127.0.0.1';
+config.erizoController.hostname = '';
+config.erizoController.port = 8080;
+config.erizoController.ssl = false;
+config.erizoController.listen_ssl = false;
+config.erizoController.listen_port = 8080;
+config.erizo.minport = 30000;
+config.erizo.maxport = 30050;
+
+config.erizoAgent.publicIP = '127.0.0.1';
+
+var module = module || {};
+module.exports = config;

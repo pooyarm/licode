@@ -20,6 +20,9 @@ WORKDIR /opt
 COPY . /opt/licode
 
 RUN mkdir /opt/licode/.git
+RUN mkdir /opt/licode/etc/
+
+RUN echo "var module = module || {}; module.exports = {}" > /opt/licode/etc/licode_config.js;
 
 # Clone and install licode
 WORKDIR /opt/licode/scripts

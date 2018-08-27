@@ -184,6 +184,13 @@ config.erizo.useNicer = false;  // default value: false
 
 config.erizo.disabledHandlers = []; // there are no handlers disabled by default
 
+try {
+    var default_config = require('/opt/licode/etc/licode_config.js');
+    var merge = require('deepmerge');
+    config = merge(config, default_config);
+} catch (ex) {
+}
+
 /***** END *****/
 // Following lines are always needed.
 var module = module || {};
