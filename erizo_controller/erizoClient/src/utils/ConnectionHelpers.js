@@ -61,7 +61,39 @@ const GetUserMedia = (config, callback = () => {}, error = () => {}) => {
       case 'chrome-stable':
         Logger.debug('Screen sharing in Chrome');
         screenConfig = {};
-        if (config.desktopStreamId) {
+        /*global App*/
+        if (App && App.isDesktop) {
+          /*global chrome*/
+          chrome.desktopCapture.chooseDesktopMedia(['screen', 'window'], function(id){
+              console.log('opening stream with id', id);
+              getUserMedia({
+                video: {
+                  mandatory: {
+                      chromeMediaSourceId: id, 
+                      chromeMediaSource:'desktop'
+                  }
+                }
+              }, callback, error);
+          });
+          /*
+          var gui = nw.require('nw.gui');
+          // if screens has not been initiated before, init it
+          if (gui.Screen.Init){ gui.Screen.Init(); }
+          gui.Screen.chooseDesktopMedia(["screen","window"],
+              function(streamId) {
+                  var vidConstraint = {
+                      mandatory: {
+                          chromeMediaSource: 'desktop',
+                          chromeMediaSourceId: streamId,
+                          maxWidth: 1920,
+                          maxHeight: 1080
+                      },
+                      optional: []
+                  };
+                  getUserMedia({audio: false, video: vidConstraint}, callback, error);
+              });
+          */
+        } else if (config.desktopStreamId) {
           screenConfig.video = config.video || { mandatory: {} };
           screenConfig.video.mandatory = screenConfig.video.mandatory || {};
           screenConfig.video.mandatory.chromeMediaSource = 'desktop';

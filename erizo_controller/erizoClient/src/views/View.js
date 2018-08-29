@@ -11,7 +11,8 @@ const View = () => {
   // Variables
 
   // URL where it will look for icons and assets
-  that.url = '';
+  /*global App*/
+  that.url = App && App.staticUrl + "assets/img/weedeo";
   return that;
 };
 
