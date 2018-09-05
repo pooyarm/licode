@@ -277,6 +277,18 @@ const Stream = (altConnectionHelpers, specInput) => {
     }
   };
 
+  that.setSinkId = (sinkId) => {
+    if (that.hasVideo() || this.hasScreen()) {
+        if (that.player.video.setSinkId) {
+          that.player.video.setSinkId(sinkId);
+        }
+    } else {
+        if (that.player.audio.setSinkId) {
+          that.player.audio.setSinkId(sinkId);
+        }
+    }
+  };
+
   that.show = that.play;
   that.hide = that.stop;
 
