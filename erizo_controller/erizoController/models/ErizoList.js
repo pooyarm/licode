@@ -1,4 +1,4 @@
-'use strict';
+
 const EventEmitter = require('events').EventEmitter;
 
 const MAX_ERIZOS_PER_ROOM = 100;
@@ -13,26 +13,22 @@ class ErizoList extends EventEmitter {
     }
     this.erizos = new Array(maxErizos);
     this.erizos.fill(1);
-    this.erizos = this.erizos.map(() => {
-      return {
-        pending: false,
-        erizoId: undefined,
-        agentId: undefined,
-        erizoIdForAgent: undefined,
-        publishers: [],
-        kaCount: 0,
-      };
-    });
+    this.erizos = this.erizos.map(() => ({
+      pending: false,
+      erizoId: undefined,
+      agentId: undefined,
+      erizoIdForAgent: undefined,
+      publishers: [],
+      kaCount: 0,
+    }));
   }
 
   findById(erizoId) {
-    return this.erizos.find((erizo) => {
-      return erizo.erizoId === erizoId;
-    });
+    return this.erizos.find(erizo => erizo.erizoId === erizoId);
   }
 
   onErizoReceived(position, callback) {
-    this.on(this.getInternalPosition(position), callback);
+    this.once(this.getInternalPosition(position), callback);
   }
 
   getInternalPosition(position) {
@@ -75,7 +71,7 @@ class ErizoList extends EventEmitter {
     erizo.erizoId = erizoId;
     erizo.agentId = agentId;
     erizo.erizoIdForAgent = erizoIdForAgent;
-    this.emit(position, erizo);
+    this.emit(this.getInternalPosition(position), erizo);
   }
 }
 

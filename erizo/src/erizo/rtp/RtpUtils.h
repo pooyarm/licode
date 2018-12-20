@@ -15,6 +15,8 @@ class RtpUtils {
  public:
   static bool sequenceNumberLessThan(uint16_t first, uint16_t second);
 
+  static bool numberLessThan(uint16_t first, uint16_t last, int bits);
+
   static void forEachRtcpBlock(std::shared_ptr<DataPacket> packet, std::function<void(RtcpHeader*)> f);
 
   static void updateREMB(RtcpHeader *chead, uint bitrate);
@@ -33,6 +35,7 @@ class RtpUtils {
   static int getPaddingLength(std::shared_ptr<DataPacket> packet);
 
   static std::shared_ptr<DataPacket> makePaddingPacket(std::shared_ptr<DataPacket> packet, uint8_t padding_size);
+  static std::shared_ptr<DataPacket> makeVP8BlackKeyframePacket(std::shared_ptr<DataPacket> packet);
 };
 
 }  // namespace erizo

@@ -63,25 +63,31 @@ function checkRoomExists(room) {
     });
 }
 
-var app = express();
+const app = express();
 
 // app.configure ya no existe
 "use strict";
 app.use(errorhandler({
-    dumpExceptions: true,
-    showStack: true
+  dumpExceptions: true,
+  showStack: true,
 }));
 
 app.use(morgan('dev'));
-app.use(express.static(__dirname + '/public'));
+app.use(express.static(`${__dirname}/public`));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
+/*
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    next();
+});
+*/
 
-
-//app.set('views', __dirname + '/../views/');
-//disable layout
-//app.set("view options", {layout: false});
+// app.set('views', __dirname + '/../views/');
+// disable layout
+// app.set("view options", {layout: false});
 
 N.API.init(config.nuve.superserviceID, config.nuve.superserviceKey, 'http://localhost:3000/');
 

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <string>
+#include <inttypes.h>
 
 #include "./MediaDefinitions.h"
 #include "./MediaStream.h"
@@ -15,7 +16,8 @@ constexpr duration kStatsPeriod = std::chrono::milliseconds(100);
 constexpr uint8_t kMaxPaddingSize = 255;
 constexpr uint64_t kMinMarkerRate = 3;
 constexpr uint64_t kInitialBitrate = 300000;
-constexpr uint64_t kPaddingBurstSize = 255 * 10;
+constexpr uint8_t kMaxBurstPackets = 200;
+constexpr uint8_t kSlideShowBurstPackets = 20;
 
 RtpPaddingGeneratorHandler::RtpPaddingGeneratorHandler(std::shared_ptr<erizo::Clock> the_clock) :
   clock_{the_clock}, stream_{nullptr}, max_video_bw_{0}, higher_sequence_number_{0},
@@ -23,10 +25,12 @@ RtpPaddingGeneratorHandler::RtpPaddingGeneratorHandler(std::shared_ptr<erizo::Cl
   number_of_full_padding_packets_{0}, last_padding_packet_size_{0},
   last_rate_calculation_time_{clock_->now()}, started_at_{clock_->now()},
   enabled_{false}, first_packet_received_{false},
+  slideshow_mode_active_ {false},
   marker_rate_{std::chrono::milliseconds(100), 20, 1., clock_},
   rtp_header_length_{12},
-  bucket_{kInitialBitrate, kPaddingBurstSize, clock_},
-  scheduled_task_{std::make_shared<ScheduledTaskReference>()} {}
+  bucket_{kInitialBitrate, kSlideShowBurstPackets * kMaxPaddingSize, clock_},
+  scheduled_task_{std::make_shared<ScheduledTaskReference>()} {
+  }
 
 
 
@@ -59,6 +63,8 @@ void RtpPaddingGeneratorHandler::notifyUpdate() {
   if (processor) {
     max_video_bw_ = processor->getMaxVideoBW();
   }
+
+  slideshow_mode_active_ = stream_->isSlideShowModeEnabled();
 }
 
 void RtpPaddingGeneratorHandler::read(Context *ctx, std::shared_ptr<DataPacket> packet) {
@@ -174,7 +180,7 @@ void RtpPaddingGeneratorHandler::recalculatePaddingRate() {
 
   int64_t target_padding_bitrate = target_bitrate - media_bitrate;
   // TODO(pedro): figure out a burst size that makes sense here
-  bucket_.reset(std::max(target_padding_bitrate, int64_t(0)), kPaddingBurstSize);
+  bucket_.reset(std::max(target_padding_bitrate, int64_t(0)), getBurstSize());
 
   if (target_padding_bitrate <= 0) {
     number_of_full_padding_packets_ = 0;
@@ -184,6 +190,11 @@ void RtpPaddingGeneratorHandler::recalculatePaddingRate() {
 
   uint64_t marker_rate = marker_rate_.value(std::chrono::milliseconds(500));
   marker_rate = std::max(marker_rate, kMinMarkerRate);
+  // TODO(javier): There are arithmetic exceptions in the line following this if clause, so I'm
+  // trying to figure out the cause. I'll remove this check if it happens in production and fix it.
+  if (marker_rate > std::numeric_limits<uint64_t>::max() / 8) {
+    ELOG_WARN("message: Marker Rate too high %" PRIu64, marker_rate);
+  }
   uint64_t bytes_per_marker = target_padding_bitrate / (marker_rate * 8);
   number_of_full_padding_packets_ = bytes_per_marker / (kMaxPaddingSize + rtp_header_length_);
   last_padding_packet_size_ = bytes_per_marker % (kMaxPaddingSize + rtp_header_length_) - rtp_header_length_;
@@ -200,6 +211,14 @@ uint64_t RtpPaddingGeneratorHandler::getTargetBitrate() {
     target_bitrate = std::min(target_bitrate, max_video_bw_);
   }
   return target_bitrate;
+}
+
+uint64_t RtpPaddingGeneratorHandler::getBurstSize() {
+  uint64_t burstPackets = kSlideShowBurstPackets;
+  if (!slideshow_mode_active_) {
+    burstPackets = std::min((number_of_full_padding_packets_ + 1), (uint64_t)kMaxBurstPackets);
+  }
+  return burstPackets * kMaxPaddingSize;
 }
 
 void RtpPaddingGeneratorHandler::enablePadding() {

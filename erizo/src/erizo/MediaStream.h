@@ -4,8 +4,10 @@
 
 #include <boost/thread/mutex.hpp>
 
+#include <atomic>
 #include <string>
 #include <map>
+#include <random>
 #include <vector>
 
 #include "./logger.h"
@@ -48,6 +50,7 @@ class MediaStream: public MediaSink, public MediaSource, public FeedbackSink,
                         public FeedbackSource, public LogContext, public HandlerManagerListener,
                         public std::enable_shared_from_this<MediaStream>, public Service {
   DECLARE_LOGGER();
+  static log4cxx::LoggerPtr statsLogger;
 
  public:
   typedef typename Handler::Context Context;
@@ -68,10 +71,12 @@ class MediaStream: public MediaSink, public MediaSource, public FeedbackSink,
   bool init();
   void close() override;
   virtual uint32_t getMaxVideoBW();
+  virtual uint32_t getBitrateFromMaxQualityLayer() { return bitrate_from_max_quality_layer_; }
+  virtual uint32_t getVideoBitrate() { return video_bitrate_; }
+  void setVideoBitrate(uint32_t bitrate) { video_bitrate_ = bitrate; }
   void setMaxVideoBW(uint32_t max_video_bw);
   void syncClose();
   bool setRemoteSdp(std::shared_ptr<SdpInfo> sdp);
-  bool setLocalSdp(std::shared_ptr<SdpInfo> sdp);
 
   /**
    * Sends a PLI Packet
@@ -80,7 +85,7 @@ class MediaStream: public MediaSink, public MediaSource, public FeedbackSink,
   int sendPLI() override;
   void sendPLIToFeedback();
   void setQualityLayer(int spatial_layer, int temporal_layer);
-  void setMinDesiredSpatialLayer(int spatial_layer);
+  void enableSlideShowBelowSpatialLayer(bool enabled, int spatial_layer);
 
   WebRTCEvent getCurrentState();
 
@@ -125,18 +130,24 @@ class MediaStream: public MediaSink, public MediaSource, public FeedbackSink,
 
   void asyncTask(std::function<void(std::shared_ptr<MediaStream>)> f);
 
+  void initializeStats();
+  void printStats();
+
   bool isAudioMuted() { return audio_muted_; }
   bool isVideoMuted() { return video_muted_; }
 
-  SdpInfo* getRemoteSdpInfo() { return remote_sdp_.get(); }
+  std::shared_ptr<SdpInfo> getRemoteSdpInfo() { return remote_sdp_; }
 
-  bool isSlideShowModeEnabled() { return slide_show_mode_; }
+  virtual bool isSlideShowModeEnabled() { return slide_show_mode_; }
+
+  virtual bool isSimulcast() { return simulcast_; }
+  void setSimulcast(bool simulcast) { simulcast_ = simulcast; }
 
   RtpExtensionProcessor& getRtpExtensionProcessor() { return connection_->getRtpExtensionProcessor(); }
   std::shared_ptr<Worker> getWorker() { return worker_; }
 
-  std::string& getId() { return stream_id_; }
-  std::string& getLabel() { return mslabel_; }
+  std::string getId() { return stream_id_; }
+  std::string getLabel() { return mslabel_; }
 
   bool isSourceSSRC(uint32_t ssrc);
   bool isSinkSSRC(uint32_t ssrc);
@@ -146,9 +157,10 @@ class MediaStream: public MediaSink, public MediaSource, public FeedbackSink,
   bool isRunning() { return pipeline_initialized_ && sending_; }
   Pipeline::Ptr getPipeline() { return pipeline_; }
   bool isPublisher() { return is_publisher_; }
+  void setBitrateFromMaxQualityLayer(uint64_t bitrate) { bitrate_from_max_quality_layer_ = bitrate; }
 
   inline std::string toLog() {
-    return "id: " + stream_id_ + ", role:" + (is_publisher_ ? "publisher" : "subscriber") + " " + printLogContext();
+    return "id: " + stream_id_ + ", role:" + (is_publisher_ ? "publisher" : "subscriber") + ", " + printLogContext();
   }
 
  private:
@@ -158,9 +170,12 @@ class MediaStream: public MediaSink, public MediaSource, public FeedbackSink,
   int deliverFeedback_(std::shared_ptr<DataPacket> fb_packet) override;
   int deliverEvent_(MediaEventPtr event) override;
   void initializePipeline();
+  void transferLayerStats(std::string spatial, std::string temporal);
+  void transferMediaStats(std::string target_node, std::string source_parent, std::string source_node);
 
   void changeDeliverPayloadType(DataPacket *dp, packetType type);
   // parses incoming payload type, replaces occurence in buf
+  uint32_t getRandomValue(uint32_t min, uint32_t max);
 
  private:
   boost::mutex event_listener_mutex_;
@@ -181,6 +196,7 @@ class MediaStream: public MediaSink, public MediaSource, public FeedbackSink,
 
   std::shared_ptr<RtcpProcessor> rtcp_processor_;
   std::shared_ptr<Stats> stats_;
+  std::shared_ptr<Stats> log_stats_;
   std::shared_ptr<QualityManager> quality_manager_;
   std::shared_ptr<PacketBufferService> packet_buffer_;
   std::shared_ptr<HandlerManager> handler_manager_;
@@ -195,9 +211,14 @@ class MediaStream: public MediaSink, public MediaSource, public FeedbackSink,
   bool pipeline_initialized_;
 
   bool is_publisher_;
+
+  std::atomic_bool simulcast_;
+  std::atomic<uint64_t> bitrate_from_max_quality_layer_;
+  std::atomic<uint32_t> video_bitrate_;
+  std::random_device random_device_;
+  std::mt19937 random_generator_;
  protected:
   std::shared_ptr<SdpInfo> remote_sdp_;
-  std::shared_ptr<SdpInfo> local_sdp_;
 };
 
 class PacketReader : public InboundHandler {
