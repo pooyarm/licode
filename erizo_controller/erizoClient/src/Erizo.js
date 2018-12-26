@@ -20,11 +20,14 @@ const NewErizo = {
   Logger,
 };
 
-const ErizoFactory = (version = 'latest') => {
-  if (version === 'old') {
-    return OldErizo;
+const ErizoFactory = (version = '1') => {
+  switch(version) {
+    case '2':
+      return NewErizo;
+    case '1':
+    default:
+      return OldErizo;
   }
-  return NewErizo;
 }
 
 export default ErizoFactory;
