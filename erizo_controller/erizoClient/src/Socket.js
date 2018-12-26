@@ -62,12 +62,16 @@ const Socket = (newIo) => {
 
     // Hack to know the exact reason of the WS closure (socket.io does not publish it)
     let closeCode = WEBSOCKET_NORMAL_CLOSURE;
-    const socketOnCloseFunction = socket.io.engine.transport.ws.onclose;
-    socket.io.engine.transport.ws.onclose = (closeEvent) => {
-      Logger.warning('WebSocket closed, code:', closeEvent.code);
-      closeCode = closeEvent.code;
-      socketOnCloseFunction(closeEvent);
-    };
+    try {
+      const socketOnCloseFunction = socket.io.engine.transport.ws.onclose;
+      socket.io.engine.transport.ws.onclose = (closeEvent) => {
+        Logger.warning('WebSocket closed, code:', closeEvent.code);
+        closeCode = closeEvent.code;
+        socketOnCloseFunction(closeEvent);
+      };
+    } catch(e) {
+      Logger.debug('Error during overriding socket ws onclose method', e, socket);
+    }
     that.socket = socket;
     socket.on('onAddStream', emit.bind(that, 'onAddStream'));
 

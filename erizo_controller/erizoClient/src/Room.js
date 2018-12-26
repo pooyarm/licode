@@ -894,6 +894,10 @@ const Room = (altIo, altConnectionHelpers, altConnectionManager, specInput) => {
     return streams;
   };
 
+  that.localStreamsCount = () => {
+    return that.localStreams.size();
+  };
+
   that.on('room-disconnected', clearAll);
 
   socket.on('onAddStream', socketEventToArgs.bind(null, socketOnAddStream));

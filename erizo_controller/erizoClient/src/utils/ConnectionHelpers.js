@@ -65,7 +65,7 @@ const GetUserMedia = (config, callback = () => {}, error = () => {}) => {
         if (App && App.isDesktop) {
           /*global chrome*/
           chrome.desktopCapture.chooseDesktopMedia(['screen', 'window'], function(id){
-              console.log('opening stream with id', id);
+              Logger.debug('opening desktopcapture stream with id', id);
               getUserMedia({
                 video: {
                   mandatory: {

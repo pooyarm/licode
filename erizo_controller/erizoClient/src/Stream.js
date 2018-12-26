@@ -208,7 +208,7 @@ const Stream = (altConnectionHelpers, specInput) => {
         that.dispatchEvent(streamEvent);
       }
     } catch (e) {
-      Logger.error(`Failed to get access to local media. Error was ${e}.`);
+      Logger.error(`Catched an error during get access to local media. Error was ${e}.`);
       const streamEvent = StreamEvent({ type: 'access-denied', msg: e });
       that.dispatchEvent(streamEvent);
     }
