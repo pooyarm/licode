@@ -12,6 +12,8 @@ config.erizoController.listen_ssl = false;
 config.erizoController.listen_port = 8080;
 config.erizo.minport = 30000;
 config.erizo.maxport = 30050;
+//config.erizoController.ssl_key = '/opt/licode/cert/server.key';
+//config.erizoController.ssl_cert = '/opt/licode/cert/server.crt';
 
 config.erizoAgent.publicIP = '127.0.0.1';
 
