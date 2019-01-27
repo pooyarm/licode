@@ -22,12 +22,6 @@ const erizoTasks = (gulp, plugins, config) => {
   that.compile = () =>
     gulp.src(`${erizoConfig.debug}/**/*.js`, { base: './' })
       .pipe(plugins.sourcemaps.init())
-      .pipe(plugins.closureCompiler({
-        languageIn: 'ECMASCRIPT6',
-        languageOut: 'ECMASCRIPT5',
-        jsOutputFile: 'erizo.js',
-        createSourceMap: true,
-      }))
       .on('error', anError => plugins.exitOnError(anError))
       .pipe(plugins.sourcemaps.write('/')) // gulp-sourcemaps automatically adds the sourcemap url comment
       .on('error', anError => plugins.exitOnError(anError))

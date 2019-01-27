@@ -1,3 +1,5 @@
+import "@babel/polyfill";
+
 import Room from './Room';
 import { LicodeEvent, RoomEvent, StreamEvent } from './Events';
 import Stream from './Stream';

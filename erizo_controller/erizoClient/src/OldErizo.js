@@ -1405,14 +1405,21 @@ Erizo.GetUserMedia = function (config, callback, error) {
         if (App.isDesktop) {
         chrome.desktopCapture.chooseDesktopMedia(['screen', 'window'], function(id){
             console.log('opening stream with id', id);
-            getUserMedia({
+            var screenConfig = {
                 video: {
-                mandatory: {
-                    chromeMediaSourceId: id, 
-                    chromeMediaSource:'desktop'
+                    mandatory: {
+                        chromeMediaSourceId: id, 
+                        chromeMediaSource:'desktop'
+                    }
                 }
-                }
-            }, callback, error);
+            };
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                promise = navigator.mediaDevices.getUserMedia(screenConfig).then(callback);
+                // Google compressor complains about a func called catch
+                promise['catch'](error);
+            } else {
+                navigator.getMedia(screenConfig, callback, error);
+            }
         });
         /*
         var gui = require('nw.gui');
@@ -3620,10 +3627,6 @@ Erizo.VideoPlayer = function (spec) {
         document.getElementById(key).value = unescape(value);
     });*/
 
-    L.Logger.debug('Creating URL from stream ' + that.stream);
-    var myURL = window.URL || webkitURL;
-    that.streamUrl = myURL.createObjectURL(that.stream);
-
     // Container
     that.div = document.createElement('div');
     that.div.setAttribute('id', 'player_' + that.id);
@@ -3705,7 +3708,7 @@ Erizo.VideoPlayer = function (spec) {
     }
     // --------------
 
-    that.video.src = that.streamUrl;
+    that.video.srcObject = that.stream;
 
     return that;
 };
@@ -3732,11 +3735,6 @@ Erizo.AudioPlayer = function (spec) {
 
     // DOM element in which the AudioPlayer will be appended
     that.elementID = spec.elementID;
-
-
-    L.Logger.debug('Creating URL from stream ' + that.stream);
-    var myURL = window.URL || webkitURL;
-    that.streamUrl = myURL.createObjectURL(that.stream);
 
     // Audio tag
     that.audio = document.createElement('audio');
@@ -3827,7 +3825,7 @@ Erizo.AudioPlayer = function (spec) {
     }
     // --------------
 
-    that.audio.src = that.streamUrl;
+    that.audio.srcObject = that.stream;
 
     return that;
 };

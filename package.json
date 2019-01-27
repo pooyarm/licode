@@ -60,7 +60,7 @@
     "lint": "npm run lintErizoController && npm run lintBasicExample && npm run lintNuve && npm run lintSpine"
   },
   "dependencies": {
+    "@babel/polyfill": "^7.2.5",
     "sdp-transform": "^2.4.1"
-  },
-  "browserslist": "> 0.1%"
+  }
 }
